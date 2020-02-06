@@ -35,10 +35,24 @@ var startCmd = &cobra.Command{
 		s := make(chan os.Signal, 1)
 		signal.Notify(s, os.Interrupt)
 		pipeFile := viper.GetString("path")
-		os.Remove(pipeFile)
-		err := syscall.Mkfifo(pipeFile, 0666)
-		if err != nil {
-			log.Fatal("Make named pipe file error:", err)
+		if s, err := os.Stat(pipeFile); err == nil {
+			if s.IsDir() {
+				err := os.Remove(pipeFile)
+				if err != nil {
+					log.Fatalf("could not remove file: %v", err)
+				}
+				err = syscall.Mkfifo(pipeFile, 0666)
+				if err != nil {
+					log.Fatalf("could not make fifo file: %v", err)
+				}
+			}
+		} else if os.IsNotExist(err) {
+			err := syscall.Mkfifo(pipeFile, 0666)
+			if err != nil {
+				log.Fatalf("could not make fifo file: %v", err)
+			}
+		} else {
+			log.Fatalf("weird error: %v", err)
 		}
 		f, err := os.OpenFile(pipeFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
 		if err != nil {
