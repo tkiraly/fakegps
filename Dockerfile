@@ -14,4 +14,5 @@ RUN ./scripts/build.sh
 # final stage
 FROM ubuntu:18.04
 COPY --from=build /app/fakegps /fakegps
-ENTRYPOINT ["/fakegps", "version"]
+ENTRYPOINT ["/fakegps"]
+CMD [ "version" ]
