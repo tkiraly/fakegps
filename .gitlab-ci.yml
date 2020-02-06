@@ -1,0 +1,32 @@
+image: golang:1.13
+
+stages:
+  - test
+  - build_tag
+  - build_latest
+  - publish
+    
+before_script:
+  - echo -n $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
+
+test:
+  stage: test
+  script:
+    - go mod download
+    - go test -cover ./...
+
+build_tag:
+  stage: build_tag
+  only:
+    - tags
+  script:
+    - ./scripts/docker-build-tag.sh
+    - ./scripts/docker-push-tag.sh
+
+build_latest:
+  stage: build_latest
+  only:
+    - master
+  script:
+    - ./scripts/docker-build.sh
+    - ./scripts/docker-push-latest.sh
