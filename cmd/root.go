@@ -11,8 +11,10 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "fakegps",
-	Short: "fakegps simulates a gps receiver",
+	Use:           "fakegps",
+	Short:         "fakegps simulates a gps receiver",
+	SilenceErrors: false,
+	SilenceUsage:  true,
 }
 
 func Execute() {
