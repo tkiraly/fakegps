@@ -7,7 +7,9 @@ RUN go mod download
 ARG MAJOR
 ARG MINOR
 ARG COMMITCOUNT
+ARG GONOSUMDB
 
+RUN go mod download
 ADD . /app
 RUN ./scripts/build.sh
 
