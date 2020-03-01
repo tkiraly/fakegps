@@ -6,6 +6,6 @@ MAJOR="${vers[0]}"
 MINOR="${vers[1]}"
 COMMITCOUNT="${vers[2]}"
 
-docker build --build-arg MINOR=$MINOR --build-arg MAJOR=$MAJOR --build-arg COMMITCOUNT=$COMMITCOUNT\
+docker build --build-arg=GOPROXY=$ATHENS --build-arg=GONOSUMDB=$GONOSUMDB --build-arg MINOR=$MINOR --build-arg MAJOR=$MAJOR --build-arg COMMITCOUNT=$COMMITCOUNT\
   -t registry.gitlab.com/loranna/fakegps:$MAJOR.$MINOR.$COMMITCOUNT \
   -t registry.gitlab.com/loranna/fakegps:latest .
