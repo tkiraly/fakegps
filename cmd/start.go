@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,22 +9,28 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/tkiraly/nmea/gpgga"
+	"github.com/tkiraly/nmea/gprmc"
 )
 
-var path string
+var gpspath string
+var longitude, latitude, hdop, altitude float64
+var usednumofsats int
 
 func init() {
-	startCmd.Flags().StringVar(&path, "path", "/tmp/fakegps", "path of the fifo to push to")
-	viper.BindPFlag("path", startCmd.Flags().Lookup("path"))
+	startCmd.Flags().StringVar(&gpspath, "gpspath", "/tmp/fakegps", "path of the fifo to push to")
+	viper.BindPFlag("gpspath", startCmd.Flags().Lookup("gpspath"))
+	viper.BindEnv("gpspath", "GPS_PATH")
+	startCmd.Flags().Float64Var(&longitude, "longitude", 19.078152, "path of the fifo to push to")
+	viper.BindPFlag("longitude", startCmd.Flags().Lookup("longitude"))
+	viper.BindEnv("longitude", "LONGITUDE")
+	startCmd.Flags().Float64Var(&latitude, "latitude", 47.515111, "path of the fifo to push to")
+	viper.BindPFlag("latitude", startCmd.Flags().Lookup("latitude"))
+	viper.BindEnv("latitude", "LATITUDE")
+	startCmd.Flags().Float64Var(&altitude, "altitude", 105, "path of the fifo to push to")
+	viper.BindPFlag("altitude", startCmd.Flags().Lookup("altitude"))
+	viper.BindEnv("altitude", "ALTITUDE")
 	rootCmd.AddCommand(startCmd)
-}
-
-func checksum(in string) string {
-	checksum := byte(0)
-	for i := 0; i < len(in); i++ {
-		checksum ^= byte(in[i])
-	}
-	return fmt.Sprintf("$%s*%X\n", in, checksum)
 }
 
 var startCmd = &cobra.Command{
@@ -34,49 +39,55 @@ var startCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		s := make(chan os.Signal, 1)
 		signal.Notify(s, os.Interrupt)
-		pipeFile := viper.GetString("path")
-		if s, err := os.Stat(pipeFile); err == nil {
-			if s.IsDir() {
-				err := os.Remove(pipeFile)
+		pipeFile := viper.GetString("gpspath")
+		_, err := os.Stat(pipeFile)
+		if err != nil {
+			if os.IsNotExist(err) {
+				err := syscall.Mkfifo(pipeFile, 0666)
 				if err != nil {
-					log.Fatalf("could not remove file: %v", err)
+					return err
 				}
-				err = syscall.Mkfifo(pipeFile, 0666)
-				if err != nil {
-					log.Fatalf("could not make fifo file: %v", err)
-				}
-			}
-		} else if os.IsNotExist(err) {
-			err := syscall.Mkfifo(pipeFile, 0666)
-			if err != nil {
-				log.Fatalf("could not make fifo file: %v", err)
+			} else {
+				return err
 			}
 		} else {
-			log.Fatalf("weird error: %v", err)
+			err := os.Remove(pipeFile)
+			if err != nil {
+				return err
+			}
+			err = syscall.Mkfifo(pipeFile, 0666)
+			if err != nil {
+				return err
+			}
 		}
-		f, err := os.OpenFile(pipeFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
+		f, err := os.OpenFile(pipeFile, os.O_RDWR|os.O_APPEND, 0777)
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 		for {
 			select {
-			case t := <-time.After(time.Second):
-				today := fmt.Sprintf("%02d%02d%02d", t.Day(), t.Month(), t.Year()%100)
-				ts := fmt.Sprintf("%02d%02d%02d.%03d", t.Hour(), t.Minute(), t.Second(), t.Nanosecond()/1000_000)
-				nmeapayload := fmt.Sprintf("GPGGA,%s,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,", ts)
-				fullnmea := checksum(nmeapayload)
-				_, err := f.WriteString(fullnmea)
+			case <-time.After(time.Second):
+				now := time.Now()
+				fullnmea, err := gpgga.BuildMinimal(now, viper.GetFloat64("longitude"), viper.GetFloat64("latitude"), viper.GetFloat64("altitude"))
 				if err != nil {
-					log.Fatalln(err)
+					return err
 				}
-				fmt.Print(fullnmea)
-				nmeapayload = fmt.Sprintf("GPRMC,%s.1,A,4807.038,N,01131.000,E,022.4,084.4,%s,,,A", ts, today)
-				fullnmea = checksum(nmeapayload)
-				_, err = f.WriteString(fullnmea)
+				line := fullnmea + "\r\n"
+				_, err = f.WriteString(line)
 				if err != nil {
-					log.Fatalln(err)
+					return err
 				}
-				fmt.Print(fullnmea)
+				fmt.Print(line)
+				fullnmea, err = gprmc.BuildMinimal(now, viper.GetFloat64("longitude"), viper.GetFloat64("latitude"))
+				if err != nil {
+					return err
+				}
+				line = fullnmea + "\r\n"
+				_, err = f.WriteString(line)
+				if err != nil {
+					return err
+				}
+				fmt.Print(line)
 			case <-s:
 				return nil
 			}

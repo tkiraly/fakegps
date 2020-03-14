@@ -4,6 +4,7 @@ ADD go.mod /app/
 WORKDIR /app
 RUN go mod download
 
+ARG GOPROXY
 ARG MAJOR
 ARG MINOR
 ARG COMMITCOUNT
