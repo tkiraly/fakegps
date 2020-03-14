@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"gitlab.com/loranna/fakegps/cmd"
+	"github.com/tkiraly/fakegps/cmd"
 )
 
 func main() {

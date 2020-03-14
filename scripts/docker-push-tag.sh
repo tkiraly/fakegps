@@ -6,4 +6,4 @@ MAJOR="${vers[0]}"
 MINOR="${vers[1]}"
 COMMITCOUNT="${vers[2]}"
 
-docker push registry.gitlab.com/loranna/fakegps:$MAJOR.$MINOR.$COMMITCOUNT
+docker push registry.github.com/tkiraly/fakegps:$MAJOR.$MINOR.$COMMITCOUNT

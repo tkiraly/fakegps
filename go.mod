@@ -1,4 +1,4 @@
-module gitlab.com/loranna/fakegps
+module github.com/tkiraly/fakegps
 
 go 1.13
 

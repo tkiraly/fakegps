@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker push registry.gitlab.com/loranna/fakegps:latest
+docker push registry.github.com/tkiraly/fakegps:latest

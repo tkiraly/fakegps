@@ -10,7 +10,7 @@ if [ -z ${COMMITCOUNT+x} ]; then
 fi
 
 go build -ldflags "-linkmode external -extldflags -static" -ldflags \
-"-X 'gitlab.com/loranna/fakegps/cmd.version=$MAJOR.$MINOR.$COMMITCOUNT'" \
+"-X 'github.com/tkiraly/fakegps/cmd.version=$MAJOR.$MINOR.$COMMITCOUNT'" \
 -o fakegps
 
 
